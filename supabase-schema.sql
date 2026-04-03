@@ -39,7 +39,7 @@ create table public.gear_slots (
 -- Meso Savings
 create table public.meso_savings (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.users(id) on delete cascade,
+  user_id uuid not null unique references public.users(id) on delete cascade,
   amount bigint not null default 0,
   goal bigint,
   updated_at timestamptz not null default now()
@@ -49,7 +49,7 @@ create table public.meso_savings (
 create table public.boss_drops (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  character_id uuid not null references public.characters(id) on delete cascade,
+  character_id uuid references public.characters(id) on delete set null,
   boss text not null,
   item text not null,
   pitched boolean not null default false,

@@ -2,10 +2,20 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+// Shared with scripts/create-members.mjs — keep in sync
+export function ignToEmail(ign: string): string {
+  const slug = ign
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '')   // strip non-email-safe chars
+  return `${slug}@jjv.notboosted`
+}
+
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [ign, setIgn] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -14,10 +24,11 @@ export default function Login() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    const email = ignToEmail(ign.trim())
     const { error } = await signIn(email, password)
     setLoading(false)
     if (error) {
-      setError(error)
+      setError('Invalid IGN or password.')
     } else {
       navigate('/guild')
     }
@@ -33,13 +44,14 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">IGN</label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              type="text"
+              value={ign}
+              onChange={e => setIgn(e.target.value)}
+              placeholder="Your in-game name"
               required
+              autoComplete="username"
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
             />
           </div>

@@ -64,7 +64,7 @@ export const BOSSES = [
   'Zakum', 'Horntail', 'Pink Bean', 'Cygnus', 'Arkarium', 'Magnus',
   'Chaos Root Abyss', 'Von Leon', 'Akechi Mitsuhide', 'Lotus', 'Damien',
   'Lucid', 'Will', 'Gloom', 'Darknell', 'Verus Hilla', 'Seren',
-  'Kalos', 'Kaling', 'Limbo',
+  'Kalos', 'Kaling', 'Limbo', 'Black Mage',
 ] as const
 
 export type Boss = typeof BOSSES[number]
