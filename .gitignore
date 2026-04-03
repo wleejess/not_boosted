@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Scripts with hardcoded secrets (run locally, never commit)
+scripts/create-members.mjs
+scripts/import-data.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

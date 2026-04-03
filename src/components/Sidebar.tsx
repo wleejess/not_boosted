@@ -57,7 +57,16 @@ export default function Sidebar() {
 
       <div className="px-3 py-4 border-t border-slate-800 space-y-1">
         {user && (
-          <div className="px-3 py-2 text-xs text-slate-500 truncate">{user.ign}</div>
+          <NavLink
+            to={`/player/${user.id}`}
+            className={({ isActive }) =>
+              `block px-3 py-2 rounded-lg text-xs transition truncate ${
+                isActive ? 'text-white bg-slate-800' : 'text-slate-500 hover:bg-slate-800 hover:text-white'
+              }`
+            }
+          >
+            {user.ign}
+          </NavLink>
         )}
         <button
           onClick={handleSignOut}
