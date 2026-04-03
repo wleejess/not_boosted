@@ -1,0 +1,78 @@
+import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+export default function Login() {
+  const { signIn } = useAuth()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    const { error } = await signIn(email, password)
+    setLoading(false)
+    if (error) {
+      setError(error)
+    } else {
+      navigate('/guild')
+    }
+  }
+
+  return (
+    <div className="min-h-svh flex items-center justify-center bg-slate-950">
+      <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-2xl border border-slate-800">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-white tracking-wide">NOT BOOSTED</h1>
+          <p className="text-slate-400 text-sm mt-1">Track your guild's progression.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-400 text-xs">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-slate-900 font-semibold py-2.5 rounded-lg text-sm transition"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <p className="text-center text-slate-500 text-xs mt-6">
+          Contact your guild admin to get an account.
+        </p>
+      </div>
+    </div>
+  )
+}
