@@ -15,6 +15,7 @@ export interface Character {
   class: string
   level: number
   is_main: boolean
+  character_img_url?: string | null
   created_at: string
 }
 

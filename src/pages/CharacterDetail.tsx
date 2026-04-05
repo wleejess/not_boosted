@@ -7,6 +7,7 @@ import { GEAR_SLOTS } from '../types'
 import type { Character, GearSlot, PotentialTier } from '../types'
 import StarDisplay from '../components/StarDisplay'
 import PotentialBadge from '../components/PotentialBadge'
+import CharacterSprite from '../components/CharacterSprite'
 
 const POTENTIAL_TIERS: PotentialTier[] = ['None', 'Rare', 'Epic', 'Unique', 'Legendary']
 
@@ -117,18 +118,26 @@ export default function CharacterDetail() {
     <div>
       {/* Header */}
       <div className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <button
-            onClick={() => {
-              if (dirty && !confirm('You have unsaved changes. Leave anyway?')) return
-              navigate('/characters')
-            }}
-            className="text-slate-500 hover:text-slate-300 text-sm mb-2 inline-flex items-center gap-1"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-bold text-white">{character.name}</h1>
-          <p className="text-slate-400 text-sm">{character.class} · Lv {character.level}</p>
+        <div className="flex items-start gap-4">
+          <CharacterSprite
+            characterClass={character.class}
+
+            size="lg"
+            imgUrl={character.character_img_url}
+          />
+          <div>
+            <button
+              onClick={() => {
+                if (dirty && !confirm('You have unsaved changes. Leave anyway?')) return
+                navigate('/characters')
+              }}
+              className="text-slate-500 hover:text-slate-300 text-sm mb-2 inline-flex items-center gap-1"
+            >
+              ← Back
+            </button>
+            <h1 className="text-2xl font-bold text-white">{character.name}</h1>
+            <p className="text-slate-400 text-sm">{character.class} · Lv {character.level}</p>
+          </div>
         </div>
         {canEdit && (
           <div className="flex gap-2 shrink-0 mt-6">

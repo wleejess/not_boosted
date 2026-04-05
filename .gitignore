@@ -16,6 +16,9 @@ dist-ssr
 scripts/create-members.mjs
 scripts/import-data.mjs
 
+# Supabase (edge function deployed via browser ui)
+supabase/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

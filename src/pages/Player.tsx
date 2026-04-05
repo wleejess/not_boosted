@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { User, MesoSavings, Character, GearSlot, BossDrop } from '../types'
 import MesoProgress from '../components/MesoProgress'
+import Skeleton from '../components/Skeleton'
+import CharacterSprite from '../components/CharacterSprite'
 
 const TIER_ORDER: Record<string, number> = {
   Legendary: 5, Unique: 4, Epic: 3, Rare: 2, None: 1,
@@ -34,6 +36,7 @@ export default function Player() {
   const [savingMeso, setSavingMeso] = useState(false)
 
   const isOwn = currentUser?.id === userId
+  const canEdit = isOwn || currentUser?.role === 'admin'
 
   useEffect(() => {
     fetchData()
@@ -127,13 +130,21 @@ export default function Player() {
   const topBoss = Object.entries(bossCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
   const recentDrops = drops.slice(0, 5)
 
-  if (loading) return <p className="text-slate-500 text-sm">Loading…</p>
+  if (loading) return (
+    <div className="max-w-2xl space-y-6">
+      <Skeleton className="h-10 w-40" />
+      <Skeleton className="h-24" />
+      <Skeleton className="h-36" />
+      <Skeleton className="h-48" />
+      <Skeleton className="h-32" />
+    </div>
+  )
   if (!profile) return <p className="text-slate-500 text-sm">Player not found.</p>
 
   return (
     <div className="max-w-2xl space-y-6">
       {/* Profile header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">{profile.ign}</h1>
           <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
@@ -144,13 +155,20 @@ export default function Player() {
             {profile.role}
           </span>
         </div>
+        {mainChar && (
+          <CharacterSprite
+            characterClass={mainChar.class}
+            size="lg"
+            imgUrl={mainChar.character_img_url}
+          />
+        )}
       </div>
 
       {/* Meso Savings */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-semibold text-sm">Meso Savings</h2>
-          {isOwn && (
+          {canEdit && (
             <button onClick={openMesoModal} className="text-xs text-teal-400 hover:text-teal-300">
               Edit
             </button>
@@ -304,7 +322,9 @@ export default function Player() {
                   key={char.id}
                   className="bg-slate-900 border border-slate-700 rounded-lg p-3 flex items-start justify-between gap-2"
                 >
-                  <div>
+                  <div className="flex items-center gap-2.5">
+                    <CharacterSprite characterClass={char.class} size="sm" imgUrl={char.character_img_url} />
+                    <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-white text-sm font-medium">{char.name}</span>
                       {char.is_main && (
@@ -319,6 +339,7 @@ export default function Player() {
                         <span className="text-amber-400">★</span> {charStars} stars
                       </p>
                     )}
+                    </div>
                   </div>
                   <button
                     onClick={() => navigate(`/characters/${char.id}`)}

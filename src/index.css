@@ -12,3 +12,40 @@ body {
 #root {
   min-height: 100svh;
 }
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Amber shimmer — pitched drops */
+.shimmer-pitched {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-pitched::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(251,191,36,0.07) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* White shimmer — Legendary potential badge */
+.shimmer-legendary {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-legendary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
