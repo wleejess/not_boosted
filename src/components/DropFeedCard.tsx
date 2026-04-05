@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import type { BossDrop } from '../types'
+import BossThumbnail from './BossThumbnail'
 
 interface Props {
   drop: BossDrop & { character_name?: string; user_ign?: string }
@@ -11,15 +12,18 @@ export default function DropFeedCard({ drop, canDelete, onDelete }: Props) {
   const isPitched = drop.pitched
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-lg bg-slate-800 border ${isPitched ? 'border-amber-500' : 'border-slate-700'}`}>
-      {isPitched && (
-        <span className="text-amber-400 text-lg mt-0.5">★</span>
-      )}
+    <div className={`flex items-center gap-3 p-4 rounded-lg bg-slate-800 border transition-shadow ${
+      isPitched
+        ? 'shimmer-pitched border-amber-500 shadow-md shadow-amber-900/30'
+        : 'border-slate-700'
+    }`}>
+      <BossThumbnail boss={drop.boss} size={36} />
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-white font-semibold text-sm truncate">{drop.item}</span>
           {isPitched && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900 text-amber-300 border border-amber-600">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900 text-amber-300 border border-amber-600 shrink-0">
               PITCHED
             </span>
           )}
@@ -31,6 +35,7 @@ export default function DropFeedCard({ drop, canDelete, onDelete }: Props) {
           {drop.user_ign && <span className="text-slate-500">({drop.user_ign})</span>}
         </div>
       </div>
+
       <div className="flex items-center gap-3 shrink-0">
         <span className="text-slate-500 text-xs">
           {format(new Date(drop.dropped_at), 'MMM d')}

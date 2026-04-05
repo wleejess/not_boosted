@@ -7,6 +7,7 @@ import { BOSSES } from '../types'
 import type { BossDrop, Character, User } from '../types'
 import DropFeedCard from '../components/DropFeedCard'
 import ConfirmModal from '../components/ConfirmModal'
+import Skeleton from '../components/Skeleton'
 
 interface EnrichedDrop extends BossDrop {
   character_name?: string
@@ -40,6 +41,7 @@ export default function Drops() {
   const [filterPlayer, setFilterPlayer] = useState('')
   const [filterBoss, setFilterBoss] = useState('')
   const [filterPitched, setFilterPitched] = useState(false)
+  const [sortAsc, setSortAsc] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<AddDropForm>(EMPTY_FORM)
@@ -87,12 +89,17 @@ export default function Drops() {
     setLoading(false)
   }
 
-  const filtered = drops.filter(d => {
-    if (filterPlayer && d.user_id !== filterPlayer) return false
-    if (filterBoss && d.boss !== filterBoss) return false
-    if (filterPitched && !d.pitched) return false
-    return true
-  })
+  const filtered = drops
+    .filter(d => {
+      if (filterPlayer && d.user_id !== filterPlayer) return false
+      if (filterBoss && d.boss !== filterBoss) return false
+      if (filterPitched && !d.pitched) return false
+      return true
+    })
+    .sort((a, b) => {
+      const diff = new Date(a.dropped_at).getTime() - new Date(b.dropped_at).getTime()
+      return sortAsc ? diff : -diff
+    })
 
   function openAdd() {
     setForm({ ...EMPTY_FORM, dropped_at: format(new Date(), 'yyyy-MM-dd') })
@@ -173,14 +180,31 @@ export default function Drops() {
           />
           Pitched only
         </label>
+        <button
+          onClick={() => setSortAsc(a => !a)}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-300 bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-md transition-colors"
+        >
+          Date {sortAsc ? '↑' : '↓'}
+        </button>
       </div>
 
       {loading ? (
-        <p className="text-slate-500 text-sm">Loading…</p>
+        <div className="space-y-2">
+          {[0, 1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16" />)}
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-500">
-          <p className="text-lg">No drops found.</p>
-          <p className="text-sm mt-1">{drops.length > 0 ? 'Try adjusting filters.' : 'Log your first drop!'}</p>
+        <div className="text-center py-16 space-y-3">
+          {drops.length > 0 ? (
+            <>
+              <p className="text-slate-400 text-lg">Nothing matches your filters.</p>
+              <p className="text-slate-500 text-sm">Try adjusting your search.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-400 text-lg">The boss room is quiet...</p>
+              <p className="text-slate-500 text-sm">Log your first drop to get started!</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { supabase } from '../lib/supabase'
 import type { User, Character, GearSlot, MesoSavings, BossDrop } from '../types'
+import Skeleton from '../components/Skeleton'
+import CharacterSprite from '../components/CharacterSprite'
+import { fetchCharacterFromNexon } from '../lib/mapleApi'
 
 function formatMeso(n: number): string {
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}b`
@@ -23,6 +26,8 @@ export default function Guild() {
   const navigate = useNavigate()
   const [stats, setStats] = useState<MemberStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [expData, setExpData] = useState<Record<string, number>>({})
+  const [expLoading, setExpLoading] = useState(false)
 
   useEffect(() => {
     fetchAll()
@@ -38,6 +43,9 @@ export default function Guild() {
     ])
 
     if (usersRes.error) { toast.error('Failed to load members'); setLoading(false); return }
+    if (charsRes.error) toast.error('Failed to load characters')
+    if (mesoRes.error) toast.error('Failed to load meso data')
+    if (dropsRes.error) toast.error('Failed to load drop data')
 
     const users: User[] = usersRes.data ?? []
     const chars: Character[] = charsRes.data ?? []
@@ -72,6 +80,22 @@ export default function Guild() {
 
     setStats(memberStats)
     setLoading(false)
+
+    // Fetch weekly EXP data from Nexon API for members with a main character
+    setExpLoading(true)
+    const withMain = memberStats.filter(s => s.mainChar)
+    const expResults = await Promise.all(
+      withMain.map(async s => {
+        const result = await fetchCharacterFromNexon(s.mainChar!.name)
+        return { userId: s.user.id, gap: result?.gap ?? null }
+      })
+    )
+    const map: Record<string, number> = {}
+    for (const { userId, gap } of expResults) {
+      if (gap !== null) map[userId] = gap
+    }
+    setExpData(map)
+    setExpLoading(false)
   }
 
   // Guild-wide aggregates
@@ -84,16 +108,37 @@ export default function Guild() {
   const byStars = [...stats].sort((a, b) => b.totalStars - a.totalStars).slice(0, 5)
   const byMeso = [...stats].filter(s => s.meso !== null).sort((a, b) => (b.meso ?? 0) - (a.meso ?? 0)).slice(0, 5)
   const byDrops = [...stats].filter(s => s.dropCount > 0).sort((a, b) => b.dropCount - a.dropCount).slice(0, 5)
+  const byExp = [...stats]
+    .filter(s => expData[s.user.id] !== undefined)
+    .sort((a, b) => (expData[b.user.id] ?? 0) - (expData[a.user.id] ?? 0))
+    .slice(0, 5)
 
   return (
     <div className="max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-1">Guild Dashboard</h1>
-        <p className="text-slate-400 text-sm">JJV — {stats.length} members</p>
+      <div className="flex items-baseline gap-3">
+        <h1 className="text-2xl font-bold text-white">Guild Dashboard</h1>
+        <span className="text-amber-400 font-bold text-xl">JJV</span>
+        <span className="text-slate-500 text-sm">{stats.length} members</span>
       </div>
 
       {loading ? (
-        <p className="text-slate-500 text-sm">Loading…</p>
+        <div className="space-y-8">
+          <div className="grid grid-cols-3 gap-3">
+            {[0, 1, 2].map(i => <Skeleton key={i} className="h-20" />)}
+          </div>
+          <div>
+            <Skeleton className="h-4 w-24 mb-3" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-40" />)}
+            </div>
+          </div>
+          <div>
+            <Skeleton className="h-4 w-20 mb-3" />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20" />)}
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           {/* Guild-wide stats */}
@@ -115,7 +160,7 @@ export default function Guild() {
           {/* Leaderboards */}
           <div>
             <h2 className="text-white font-semibold text-sm mb-3">Leaderboards</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Stars */}
               <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
                 <p className="text-slate-400 text-xs font-medium mb-3 uppercase tracking-wide">
@@ -200,6 +245,41 @@ export default function Guild() {
                   </ol>
                 )}
               </div>
+
+              {/* Weekly EXP */}
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                <p className="text-slate-400 text-xs font-medium mb-3 uppercase tracking-wide">
+                  Weekly EXP <span className="text-teal-400">↑</span>
+                </p>
+                {expLoading ? (
+                  <div className="space-y-2">
+                    {[0, 1, 2].map(i => <Skeleton key={i} className="h-5" />)}
+                  </div>
+                ) : byExp.length === 0 ? (
+                  <p className="text-slate-500 text-xs">No data yet.</p>
+                ) : (
+                  <ol className="space-y-2">
+                    {byExp.map((s, i) => (
+                      <li key={s.user.id} className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`text-xs font-bold w-4 shrink-0 ${i === 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                            {i + 1}
+                          </span>
+                          <button
+                            onClick={() => navigate(`/player/${s.user.id}`)}
+                            className="text-sm text-white hover:text-teal-300 truncate text-left"
+                          >
+                            {s.user.ign}
+                          </button>
+                        </div>
+                        <span className="text-white text-sm font-semibold shrink-0">
+                          {formatMeso(expData[s.user.id])}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
             </div>
           </div>
 
@@ -211,40 +291,55 @@ export default function Guild() {
                 <button
                   key={s.user.id}
                   onClick={() => navigate(`/player/${s.user.id}`)}
-                  className="text-left bg-slate-800 border border-slate-700 hover:border-teal-700 rounded-lg px-4 py-3 transition-colors group"
+                  className="text-left bg-slate-800 border border-slate-700 hover:ring-1 hover:ring-teal-500/40 hover:shadow-md hover:shadow-teal-950 rounded-lg px-4 py-3 transition-all group"
                 >
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-white font-semibold group-hover:text-teal-300 transition-colors">
-                      {s.user.ign}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
-                      s.user.role === 'admin'
-                        ? 'bg-amber-900 text-amber-300 border border-amber-700'
-                        : 'bg-slate-700 text-slate-400'
-                    }`}>
-                      {s.user.role}
-                    </span>
-                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-white font-semibold group-hover:text-teal-300 transition-colors truncate">
+                          {s.user.ign}
+                        </span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
+                          s.user.role === 'admin'
+                            ? 'bg-amber-900 text-amber-300 border border-amber-700'
+                            : 'bg-slate-700 text-slate-400'
+                        }`}>
+                          {s.user.role}
+                        </span>
+                      </div>
 
-                  {s.mainChar ? (
-                    <p className="text-slate-400 text-xs">
-                      {s.mainChar.name} · {s.mainChar.class} · Lv {s.mainChar.level}
-                    </p>
-                  ) : (
-                    <p className="text-slate-600 text-xs">No characters yet</p>
-                  )}
+                      {s.mainChar ? (
+                        <p className="text-slate-400 text-xs truncate">
+                          {s.mainChar.name} · {s.mainChar.class} · Lv {s.mainChar.level}
+                        </p>
+                      ) : (
+                        <p className="text-slate-600 text-xs">No characters yet</p>
+                      )}
 
-                  <div className="flex items-center gap-3 mt-2">
-                    {s.totalStars > 0 && (
-                      <span className="text-xs text-slate-300">
-                        <span className="text-amber-400">★</span> {s.totalStars}
-                      </span>
-                    )}
-                    {s.meso !== null && (
-                      <span className="text-xs text-slate-300">{formatMeso(s.meso)} meso</span>
-                    )}
-                    {s.dropCount > 0 && (
-                      <span className="text-xs text-slate-500">{s.dropCount} drops</span>
+                      <div className="flex items-center gap-3 mt-2">
+                        {s.totalStars > 0 && (
+                          <span className="text-xs text-slate-300">
+                            <span className="text-amber-400">★</span> {s.totalStars}
+                          </span>
+                        )}
+                        {s.meso !== null && (
+                          <span className="text-xs text-slate-300">{formatMeso(s.meso)} meso</span>
+                        )}
+                        {s.dropCount > 0 && (
+                          <span className="text-xs text-slate-500">{s.dropCount} drops</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {s.mainChar ? (
+                      <CharacterSprite
+                        characterClass={s.mainChar.class}
+
+                        size="md"
+                        imgUrl={s.mainChar.character_img_url}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-md bg-slate-700/50 shrink-0" />
                     )}
                   </div>
                 </button>
